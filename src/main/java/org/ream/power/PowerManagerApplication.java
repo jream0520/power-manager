@@ -16,9 +16,7 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
-import org.springframework.integration.dsl.SourcePollingChannelAdapterSpec;
-import org.springframework.integration.dsl.core.Pollers;
-import org.springframework.integration.dsl.support.Consumer;
+import org.springframework.integration.dsl.Pollers;
 
 @Configuration
 @SpringBootApplication
@@ -28,7 +26,7 @@ public class PowerManagerApplication {
 
 	@Bean
 	public IntegrationFlow integrationFlow(TedMessageEndpoint endpoint) {
-		return IntegrationFlows.from(tedSource(), new FixedRatePoller())
+		return IntegrationFlows.from(tedSource(), c -> c.poller(Pollers.fixedRate(100)))
 				.channel(inputChannel()).handle(endpoint)
 				.channel(outputChannel()).handle(influxTarget(), "writeMessage")
 				.get();
@@ -40,9 +38,8 @@ public class PowerManagerApplication {
 	
 	@Bean
 	public TedPacketSourceAdapter tedSource() {
-		TedPacketSourceAdapter source = new TedPacketSourceAdapter();
-//		FakeTedPacketSourceAdapter source = new FakeTedPacketSourceAdapter();
-		source.setComPortName("ttyUSB0");
+		TedPacketSourceAdapter source = new TedPacketSourceAdapter("ttyUSB0");
+//		FakeTedPacketSourceAdapter source = new FakeTedPacketSourceAdapter("ttyUSB0");
 		return source;
 	}
 
@@ -64,13 +61,6 @@ public class PowerManagerApplication {
 	@Bean
 	public TedPacketInfluxAdapter influxTarget() {
 		return new TedPacketInfluxAdapter();
-	}
-	private static class FixedRatePoller implements Consumer<SourcePollingChannelAdapterSpec> {
-
-		@Override
-		public void accept(SourcePollingChannelAdapterSpec spec) {
-			spec.poller(Pollers.fixedRate(10000));
-		}
 	}
 
 }

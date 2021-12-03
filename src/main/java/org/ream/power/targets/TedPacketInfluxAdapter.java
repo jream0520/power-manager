@@ -1,13 +1,16 @@
 package org.ream.power.targets;
 
-import java.util.concurrent.TimeUnit;
-
+import java.util.Arrays;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDB.ConsistencyLevel;
-import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.BatchPoints;
-import org.influxdb.dto.Point;
+
+import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.WriteApiBlocking;
+import com.influxdb.client.domain.WritePrecision;
+import com.influxdb.client.write.Point;
+import com.influxdb.exceptions.InfluxException;
+
 import org.ream.power.domain.TedPacket;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -15,46 +18,46 @@ import org.springframework.beans.factory.InitializingBean;
 public class TedPacketInfluxAdapter implements InitializingBean, DisposableBean {
 
 	private static final Logger log = Logger.getLogger(TedPacketInfluxAdapter.class.getName());
-	private String dbName = "powerdb";
-	private InfluxDB influxDB;
 	
+	private static char[] token = "cAFXmNezyPLnthsyZf4FoWzPYhimEqFTI-gs_8B9hIoEJ02Lm_4fP05-FxmprP7eddlVkr6xgAiWeYSq186KWg==".toCharArray();
+    private static String org = "jream";
+    private static String bucket = "powerdb/autogen";
+
+	private InfluxDBClient influxDBClient;
+	private WriteApiBlocking writeApi;
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		influxDB = InfluxDBFactory.connect("http://192.168.1.24:8086", "root", "root");
-//		influxDB.createDatabase(dbName);
-//		String rpName = "aRetentionPolicy";
-//		influxDB.createRetentionPolicy(rpName, dbName, "30d", "30m", 2, true);
-		if(influxDB == null || influxDB.ping() == null) {
+		influxDBClient = InfluxDBClientFactory.create("http://192.168.1.24:8086", token, org, bucket);
+
+		if(influxDBClient == null || !influxDBClient.ping()) {
 			throw new RuntimeException("Unable to start/reach InfluxDB");
 		}
+
+		writeApi = influxDBClient.getWriteApiBlocking();
+
 		log.info("Connected to InfluxDB");
 	}
 	
 	public void writeMessage(TedPacket packet) {
-		BatchPoints batchPoints = BatchPoints
-						.database(dbName)
-						.tag("async", "true")
-						.consistency(ConsistencyLevel.ALL)
-						.build();
-		Point point1 = Point.measurement("kwh")
-							.time(packet.getReadingTime().getTime(), TimeUnit.MILLISECONDS)
-							.addField("value", packet.getKwh())
-							.tag("source", "ted")
-							.build();
-		Point point2 = Point.measurement("vrms")
-							.time(packet.getReadingTime().getTime(), TimeUnit.MILLISECONDS)
-							.addField("value", packet.getVoltsRms())
-							.tag("source", "ted")
-							.build();
-		batchPoints.point(point1);
-		batchPoints.point(point2);
-		influxDB.write(batchPoints);
+		try {
+			Point point1 = Point.measurement("kwh")
+								.time(packet.getReadingTime().toInstant(), WritePrecision.MS)
+								.addField("value", packet.getKwh())
+								.addTag("source", "ted");
+			Point point2 = Point.measurement("vrms")
+								.time(packet.getReadingTime().toInstant(), WritePrecision.MS)
+								.addField("value", packet.getVoltsRms())
+								.addTag("source", "ted");
+			writeApi.writeMeasurements(WritePrecision.NS, Arrays.asList(point1, point2));
+		} catch(InfluxException ie) {
+			log.log(Level.SEVERE, "Error writing measurement", ie);
+		}
 	}
 
 	@Override
 	public void destroy() throws Exception {
 		log.info("Shutting down InfluxDB connection");
-		influxDB.close();
+		influxDBClient.close();
 	}
 
 

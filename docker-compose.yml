@@ -1,0 +1,10 @@
+version: "3"
+services:
+  power-manager:
+    container_name: power-manager
+    image: power-manager:latest
+    restart: always
+    ports:
+      - 8080:8080/tcp
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"

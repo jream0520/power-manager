@@ -8,7 +8,6 @@ import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
@@ -22,6 +21,10 @@ public class TedPacketSourceAdapter implements MessageSource<ByteBuffer>, Initia
 	private String comPortName;
 	private SerialPort comPort;
 	private boolean running = false;
+
+	public TedPacketSourceAdapter(String comPortName) {
+		this.comPortName = comPortName;
+	}
 
 	@Override
 	public void afterPropertiesSet() {
@@ -71,11 +74,6 @@ public class TedPacketSourceAdapter implements MessageSource<ByteBuffer>, Initia
 	
 	public String getComPortName() {
 		return comPortName;
-	}
-	
-	@Required
-	public void setComPortName(String comPortName) {
-		this.comPortName = comPortName;
 	}
 
 }

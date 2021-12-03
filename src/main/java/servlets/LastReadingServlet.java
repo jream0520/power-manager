@@ -1,5 +1,8 @@
 package servlets;
 
+import java.util.Optional;
+
+import org.ream.power.domain.TedPacket;
 import org.ream.power.service.LastReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,12 +15,16 @@ public class LastReadingServlet {
 
     @GetMapping("/kwh")
     public String kwh() {
-        return lastReadingService.getTedPacket().getKwh().toPlainString();
+        Optional<TedPacket> packet = lastReadingService.getTedPacket();
+        if(packet.isPresent()) return packet.get().getKwh().toPlainString();
+        else return "-1";
     }
 
     @GetMapping("/volts")
     public String volts() {
-        return lastReadingService.getTedPacket().getVoltsRms().toPlainString();
+        Optional<TedPacket> packet = lastReadingService.getTedPacket();
+        if(packet.isPresent()) return packet.get().getVoltsRms().toPlainString();
+        else return "-1";
     }
 
     public LastReadingService getLastReadingService() {

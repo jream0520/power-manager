@@ -1,5 +1,7 @@
 package org.ream.power.service;
 
+import java.util.Optional;
+
 import org.ream.power.domain.TedPacket;
 import org.springframework.stereotype.Component;
 
@@ -7,8 +9,8 @@ import org.springframework.stereotype.Component;
 public class LastReadingService {
     private TedPacket tedPacket;
 
-    public TedPacket getTedPacket() {
-        return tedPacket;
+    public Optional<TedPacket> getTedPacket() {
+        return Optional.ofNullable(tedPacket);
     }
 
     public void setTedPacket(TedPacket tedPacket) {
