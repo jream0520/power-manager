@@ -25,6 +25,7 @@ public class TedPacketInfluxAdapter implements InitializingBean, DisposableBean 
 
 	private InfluxDBClient influxDBClient;
 	private WriteApiBlocking writeApi;
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		influxDBClient = InfluxDBClientFactory.create("http://192.168.1.24:8086", token, org, bucket);
@@ -48,7 +49,7 @@ public class TedPacketInfluxAdapter implements InitializingBean, DisposableBean 
 								.time(packet.getReadingTime().toInstant(), WritePrecision.MS)
 								.addField("value", packet.getVoltsRms())
 								.addTag("source", "ted");
-			writeApi.writeMeasurements(WritePrecision.NS, Arrays.asList(point1, point2));
+			writeApi.writePoints(Arrays.asList(point1, point2));
 		} catch(InfluxException ie) {
 			log.log(Level.SEVERE, "Error writing measurement", ie);
 		}
